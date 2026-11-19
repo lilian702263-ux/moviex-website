@@ -123,13 +123,13 @@ footer{border-top:1px solid rgba(168,85,247,.2);margin-top:30px}
       <a href="https://www.instagram.com/tasfiyan47" target="_blank" rel="noopener">Instagram</a>
       <a href="https://wa.me/8801906638281" target="_blank" rel="noopener">WhatsApp</a>
     </div>
-    <div>Created with passion by <b style="color:#e9d5ff">Tasfiyan Rafi</b>, Creator &amp; Movie Lover. This site uses the TMDB API but is not endorsed or certified by TMDB. Playback is provided by a third-party player; ads shown inside the player belong to that provider — MovieX adds none of its own.</div>
+    <div>Created with passion by <b style="color:#e9d5ff">Tasfiyan Rafi</b>, Creator &amp; Movie Lover. This site uses the TMDB API but is not endorsed or certified by TMDB. Playback streams come directly from MovieX’s own providers into a clean player on this page — no third-party player and no added ads.</div>
   </div>
 </footer>
+<script src="webdeps.js"></script>
 <script>
 'use strict';
 var TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlM2MwM2VhYWZlNDc3YzEyZjFiMjFjNjY2MDE1NGUyNiIsIm5iZiI6MTc5MjQ5MjQxMy40MzEsInN1YiI6IjZhZDc0MzdkNWQ2M2QxMTIyYmJlZGVmZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Kdg8hXcshX9KHdVXU-8IkUpOXad7d5VmAMNRZX9yx2k';
-var NEX_KEY = 'nx_f5031fb231d7bffcf2a0474dc2d51d1b';
 var API = 'https://api.themoviedb.org/3';
 var IMG = 'https://image.tmdb.org/t/p/';
 var DRIVE = 'https://drive.google.com/uc?export=download&id=18xujToLipMfJRYh2lUue0ny0LklWBHcx';
@@ -188,7 +188,7 @@ function renderHome(){
       h += '<section class="hero">' + (backdrop(hero,'w1280') ? '<img class="bg" src="' + backdrop(hero,'w1280') + '" alt=""/>' : '') +
         '<div class="shade"></div><div class="hin"><div class="meta"><span class="star">★ ' + Number(hero.vote_average||0).toFixed(1) + '</span><span>' + esc(yr(dateOf(hero))) + '</span><span>' + (k==='tv'?'Series':'Movie') + '</span><span>🔥 Trending #1</span></div>' +
         '<h1>' + esc(titleOf(hero)) + '</h1><p>' + esc(hero.overview||'') + '</p>' +
-        '<div class="btnrow"><a class="btn pri" href="#/watch/' + k + '/' + hero.id + '">▶ Watch now</a><a class="btn" href="#/title/' + k + '/' + hero.id + '">Details</a></div></div></section>';
+        '<div class="btnrow"><a class="btn pri" href="#/play/' + k + '/' + hero.id + '">▶ Watch now</a><a class="btn" href="#/title/' + k + '/' + hero.id + '">Details</a></div></div></section>';
     }
     h += rowHtml('🔥 Trending now', trend.slice(0, 18));
     h += rowHtml('🎬 Popular movies', (res[1].results||[]).slice(0, 18), 'movie');
@@ -254,7 +254,7 @@ function renderTitle(kind, id){
       '<div class="chips">' + genres + facts + '</div>' +
       '<p class="ov">' + esc(d.overview || 'No overview available.') + '</p>' +
       (kind === 'movie'
-        ? '<div class="btnrow"><a class="btn pri" href="#/watch/movie/' + id + '">▶ Watch now</a></div>'
+        ? '<div class="btnrow"><a class="btn pri" href="#/play/movie/' + id + '">▶ Watch now</a></div>'
         : '<div class="btnrow"><a class="btn pri" href="#episodes">▶ Pick an episode below</a></div>') +
       '</div></div>';
     var cast = (d.credits && d.credits.cast || []).slice(0, 14);
@@ -303,34 +303,437 @@ function loadEpisodes(){
       return '<div class="ep" data-ep="' + e.episode_number + '">' + still + '<div class="ein"><div class="et">' + e.episode_number + '. ' + esc(e.name || ('Episode ' + e.episode_number)) + '</div><div class="eo">' + esc(e.overview || '') + '</div></div></div>';
     }).join('') + '</div>';
     box.querySelectorAll('[data-ep]').forEach(function(el){
-      el.addEventListener('click', function(){ location.hash = '#/watch/tv/' + detailState.id + '/' + sNum + '/' + el.getAttribute('data-ep'); });
+      el.addEventListener('click', function(){ location.hash = '#/play/tv/' + detailState.id + '/' + sNum + '/' + el.getAttribute('data-ep'); });
     });
   }).catch(function(){ box.innerHTML = '<div class="note">Episodes failed to load.</div>'; });
 }
 
-function embedUrl(kind, id, s, e){
-  if(kind === 'movie') return 'https://api.codespecters.com/embed/movie/' + id + '?apikey=' + NEX_KEY;
-  return 'https://api.codespecters.com/embed/tv/' + id + '/' + s + '/' + e + '?apikey=' + NEX_KEY;
-}
-function renderWatch(kind, id, s, e){
-  setNav(kind === 'tv' ? 'tv' : 'movies');
-  loading('Preparing your player…');
-  api('/' + kind + '/' + id).then(function(d){
-    var t = titleOf(d);
-    var sub = kind === 'tv' ? 'Season ' + s + ' · Episode ' + e : yr(dateOf(d));
-    var h = '<div style="margin-top:16px"><a class="btn" href="#/title/' + kind + '/' + id + '">← Back to details</a></div>';
-    h += '<div class="playerwrap"><div class="ar"><iframe src="' + embedUrl(kind, id, s, e) + '" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="origin"></iframe></div></div>';
-    h += '<h2 class="sec">' + esc(t) + '</h2><div class="meta"><span>' + esc(sub) + '</span><span class="star">★ ' + Number(d.vote_average||0).toFixed(1) + '</span></div>';
-    if(kind === 'tv'){
-      h += '<div class="btnrow">' +
-        (Number(e) > 1 ? '<a class="btn" href="#/watch/tv/' + id + '/' + s + '/' + (Number(e)-1) + '">⏮ Previous episode</a>' : '') +
-        '<a class="btn" href="#/watch/tv/' + id + '/' + s + '/' + (Number(e)+1) + '">Next episode ⏭</a></div>';
+'use strict';
+/* ===== MovieX Web Nova engine: the app's provider modules, running in the page.
+   Data fetches go through the relay Worker's /mxfetch route (browsers cannot
+   fetch provider sites directly). Streams play straight from the providers. ===== */
+'use strict';
+/* ===== MovieX Web Nova engine: the app's provider modules, running in the page.
+   Data fetches go through the relay Worker's /mxfetch route (browsers cannot
+   fetch provider sites directly). Streams play straight from the providers. ===== */
+var MXPROXY = 'https://korea-relay-test.lilian702263.workers.dev/mxfetch';
+var MXPROVIDERS = [
+  {v:'movieBoxWeb', name:'Nova Stream'},
+  {v:'castle', name:'Castle'},
+  {v:'vega', name:'Vega'},
+  {v:'anikoto', name:'Anikoto'}
+];
+var MX_UA = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36';
+var MX_COMMON = {'User-Agent': MX_UA, 'Accept': '*/*', 'Accept-Language': 'en-US,en;q=0.9'};
+var MX_BASES = {fibwatch: 'https://fibwatch.fit', dudefilms: 'https://new2.dudefilms.church'};
+
+function mxJar(){
+  var hosts = {};
+  return {
+    store: function(setCookies, url){
+      try {
+        var host = new URL(url).hostname;
+        if(!hosts[host]) hosts[host] = {};
+        (setCookies||[]).forEach(function(sc){
+          var pair = String(sc).split(';')[0]; var i = pair.indexOf('=');
+          if(i > 0) hosts[host][pair.slice(0,i).trim()] = pair.slice(i+1).trim();
+        });
+      } catch(e){}
+    },
+    header: function(url){
+      try {
+        var host = new URL(url).hostname; var parts = [];
+        Object.keys(hosts).forEach(function(h){
+          if(host === h || host.slice(-(h.length+1)) === '.' + h) Object.keys(hosts[h]).forEach(function(k){ parts.push(k + '=' + hosts[h][k]); });
+        });
+        return parts.join('; ');
+      } catch(e){ return ''; }
     }
-    h += '<div class="note">🎬 The video plays inside a third-party player — any ads or popups in it belong to that provider, not MovieX. For the clean, full experience (no player ads, downloads, more sources), use the free MovieX app.</div>';
-    h += '<div class="appbox"><h2>📱 Get MovieX for Android</h2><p>Version 1.6.66 · Free · No account needed</p><a class="btn pri" href="' + DRIVE + '">⬇️ Download the app</a></div>';
-    view.innerHTML = h;
-    window.scrollTo(0,0);
-  }).catch(function(){ fail('Could not prepare the player.'); });
+  };
+}
+function mxDirect(url, opts){
+  return fetch(url, {method: opts.method || 'GET', headers: opts.headers || {}, body: opts.body, redirect: 'follow'}).then(function(r){
+    return r.text().then(function(text){
+      var rh = {}; var ct = r.headers.get('content-type'); if(ct) rh['content-type'] = ct;
+      return {status: r.status, headers: rh, setCookies: [], finalUrl: r.url || url, bodyText: text};
+    });
+  });
+}
+function mxTransport(jar, url, opts){
+  return mxDirect(url, opts).catch(function(){ return mxProxyFetch(jar, url, opts); });
+}
+function mxProxyFetch(jar, url, opts){
+  var headers = Object.assign({}, opts.headers || {});
+  delete headers['Cookie']; delete headers['cookie'];
+  var cookie = jar.header(url);
+  var h = {'Content-Type': 'application/json'};
+  if(cookie) h['x-mx-cookies'] = cookie;
+  return fetch(MXPROXY, {method: 'POST', headers: h, body: JSON.stringify({url: url, method: opts.method || 'GET', headers: headers, data: opts.body != null ? String(opts.body) : undefined})})
+    .then(function(r){
+      return r.text().then(function(text){
+        var setCookies = [];
+        try { var sc = r.headers.get('x-mx-set-cookie'); if(sc) setCookies = JSON.parse(sc); } catch(e){}
+        var rh = {}; var ct = r.headers.get('content-type'); if(ct) rh['content-type'] = ct;
+        return {status: r.status, headers: rh, setCookies: setCookies, finalUrl: r.headers.get('x-mx-final-url') || url, bodyText: text};
+      });
+    });
+}
+function mxAxios(jar){
+  function request(cfg){
+    var url = cfg.url;
+    var method = String(cfg.method || 'GET').toUpperCase();
+    var headers = Object.assign({}, cfg.headers || {});
+    var body = cfg.data;
+    if(body != null && typeof body === 'object' && !(body instanceof URLSearchParams)){
+      body = JSON.stringify(body);
+      if(!headers['Content-Type'] && !headers['content-type']) headers['Content-Type'] = 'application/json';
+    } else if(body instanceof URLSearchParams){
+      body = body.toString();
+      if(!headers['Content-Type'] && !headers['content-type']) headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    }
+    return mxTransport(jar, url, {method: method, headers: headers, body: body}).then(function(res){
+      jar.store(res.setCookies, res.finalUrl || url);
+      var data = res.bodyText;
+      if(typeof data === 'string' && data.length && cfg.responseType !== 'text'){
+        try { data = JSON.parse(data); } catch(e){}
+      }
+      var out = {data: data, status: res.status, statusText: '', headers: res.headers, config: cfg, request: {responseURL: res.finalUrl}};
+      if(res.status >= 400){
+        var err = new Error('Request failed with status code ' + res.status);
+        err.response = out; err.config = cfg;
+        throw err;
+      }
+      return out;
+    }).catch(function(e){
+      if(e && e.response) throw e;
+      var err = new Error('Network Error: ' + (e && e.message || e));
+      err.config = cfg; err.request = {};
+      throw err;
+    });
+  }
+  var ax = function(cfg){ return request(typeof cfg === 'string' ? {url: cfg} : cfg); };
+  ax.request = request;
+  ax.get = function(url, cfg){ return request(Object.assign({}, cfg, {url: url, method: 'GET'})); };
+  ax.post = function(url, data, cfg){ return request(Object.assign({}, cfg, {url: url, method: 'POST', data: data})); };
+  ax.head = function(url, cfg){ return request(Object.assign({}, cfg, {url: url, method: 'HEAD'})); };
+  ax.put = function(url, data, cfg){ return request(Object.assign({}, cfg, {url: url, method: 'PUT', data: data})); };
+  ax.delete = function(url, cfg){ return request(Object.assign({}, cfg, {url: url, method: 'DELETE'})); };
+  return ax;
+}
+function mxFetchShim(jar){
+  return function(url, opts){
+    opts = opts || {};
+    return mxTransport(jar, String(url), {method: String(opts.method || 'GET').toUpperCase(), headers: opts.headers || {}, body: opts.body}).then(function(res){
+      jar.store(res.setCookies, res.finalUrl || String(url));
+      var hmap = res.headers;
+      return {
+        ok: res.status >= 200 && res.status < 300,
+        status: res.status,
+        url: res.finalUrl,
+        headers: {get: function(n){ return hmap[String(n).toLowerCase()] || null; }, forEach: function(cb){ Object.keys(hmap).forEach(function(k){ cb(hmap[k], k); }); }},
+        text: function(){ return Promise.resolve(res.bodyText); },
+        json: function(){ return Promise.resolve(JSON.parse(res.bodyText)); },
+        arrayBuffer: function(){ return Promise.resolve(new TextEncoder().encode(res.bodyText).buffer); }
+      };
+    });
+  };
+}
+function mxCtx(pv, jar){
+  var kvPrefix = 'mxkv|' + pv + '|';
+  return {
+    axios: mxAxios(jar),
+    cheerio: {load: window.MXDeps.cheerioLoad},
+    commonHeaders: MX_COMMON,
+    kvStore: {
+      get: function(k){ try { var v = localStorage.getItem(kvPrefix + k); return Promise.resolve(v == null ? null : JSON.parse(v)); } catch(e){ return Promise.resolve(null); } },
+      set: function(k, v){ try { localStorage.setItem(kvPrefix + k, JSON.stringify(v)); } catch(e){} return Promise.resolve(); },
+      delete: function(k){ try { localStorage.removeItem(kvPrefix + k); } catch(e){} return Promise.resolve(); }
+    },
+    getBaseUrl: function(name){ return Promise.resolve(MX_BASES[name] || MX_BASES[pv] || ''); },
+    getCookies: function(){ return Promise.resolve(''); },
+    crypto: window.crypto,
+    openWebView: function(){ return Promise.reject(new Error('openWebView unavailable on web')); }
+  };
+}
+var mxProviderCache = {};
+function mxLoadProvider(pv){
+  if(mxProviderCache[pv]) return mxProviderCache[pv];
+  mxProviderCache[pv] = fetch('providers/' + pv + '.json').then(function(r){
+    if(!r.ok) throw new Error('provider file ' + pv + ' missing');
+    return r.json();
+  }).then(function(j){
+    var jar = mxJar();
+    var ctx = mxCtx(pv, jar);
+    var fetchShim = mxFetchShim(jar);
+    var mods = {};
+    Object.keys(j.modules || {}).forEach(function(key){
+      var raw = j.modules[key];
+      var code = typeof raw === 'string' ? raw : (raw && raw.code) || '';
+      if(!code) return;
+      try {
+        var mod = {exports: {}};
+        var fn = new Function('exports', 'module', 'require', 'fetch', 'providerGlobal', code);
+        fn(mod.exports, mod, function(id){ throw new Error('require unavailable: ' + id); }, fetchShim, undefined);
+        mods[key] = mod.exports;
+      } catch(e){ /* a module that cannot load in a browser is skipped */ }
+    });
+    return {manifest: j.manifest, mods: mods, ctx: ctx};
+  });
+  return mxProviderCache[pv];
+}
+function mxArgs(pv, ctx, extra){
+  var a = {providerValue: pv, provider: pv, providerContext: ctx};
+  try { a.signal = AbortSignal.timeout(120000); } catch(e){}
+  return Object.assign(a, extra || {});
+}
+function mxCall(pv, key, exp, extra, timeoutMs){
+  return mxLoadProvider(pv).then(function(P){
+    var fn = P.mods[key] && P.mods[key][exp];
+    if(typeof fn !== 'function') throw new Error(pv + ' has no ' + exp);
+    var call = Promise.resolve().then(function(){ return fn(mxArgs(pv, P.ctx, extra)); });
+    var timer = new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('timeout')); }, timeoutMs || 90000); });
+    return Promise.race([call, timer]);
+  });
+}
+
+
+/* ===== Ad-free play flow: TMDB title -> provider sweep -> meta -> streams -> clean player ===== */
+var playState = null;
+var mxHls = null;
+function mxStopPlayer(){
+  if(mxHls){ try { mxHls.destroy(); } catch(e){} mxHls = null; }
+  var v = document.getElementById('mxVideo');
+  if(v){ try { v.pause(); } catch(e){} }
+}
+function normTitle(s){
+  return String(s || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function titleScore(postTitle, wantTitle){
+  var a = normTitle(postTitle), b = normTitle(wantTitle);
+  if(!a || !b) return 0;
+  if(a === b) return 3;
+  if(a.indexOf(b) === 0 || b.indexOf(a) === 0) return 2;
+  if(a.indexOf(b) >= 0 || b.indexOf(a) >= 0) return 1;
+  return 0;
+}
+function renderPlay(kind, tmdbId, s, e){
+  mxStopPlayer();
+  setNav(kind === 'tv' ? 'tv' : 'movies');
+  loading('Finding ' + (kind === 'tv' ? 'this series' : 'this movie') + ' on MovieX providers…');
+  api('/' + kind + '/' + tmdbId).then(function(d){
+    playState = {kind: kind, tmdbId: tmdbId, s: s ? Number(s) : null, e: e ? Number(e) : null,
+      title: titleOf(d), year: yr(dateOf(d)), meta: null, pv: null, matches: [], swept: 0, exact: 0};
+    view.innerHTML =
+      '<div style="margin-top:16px"><a class="btn" href="#/title/' + kind + '/' + tmdbId + '">← Back to details</a></div>' +
+      '<h2 class="sec">▶ ' + esc(playState.title) + (playState.year ? ' <span style="color:var(--mut);font-size:16px">(' + esc(playState.year) + ')</span>' : '') + '</h2>' +
+      '<div class="note" id="mxSweep">🔎 Searching MovieX providers for an ad-free stream…</div>' +
+      '<div id="mxMatches"></div><div id="mxStage"></div>' +
+      '<div class="note">Not finding it? Try the provider search with a different name: <span style="display:inline-flex;gap:8px;margin-top:8px"><input id="mxQ" type="text" value="' + esc(playState.title) + '" style="background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;color:#fff;font-size:14px"/>' +
+      '<button class="btn" id="mxQBtn" style="padding:8px 16px;font-size:14px">Search providers</button></span></div>';
+    document.getElementById('mxQBtn').addEventListener('click', function(){
+      var q = document.getElementById('mxQ').value.trim();
+      if(q) runSweep(q);
+    });
+    window.scrollTo(0, 0);
+    runSweep(playState.title);
+  }).catch(function(){ fail('Could not load this title.'); });
+}
+function runSweep(query){
+  if(!playState) return;
+  playState.matches = []; playState.swept = 0; playState.exact = 0; playState.query = query;
+  var mBox = document.getElementById('mxMatches');
+  var sBox = document.getElementById('mxSweep');
+  var stBox = document.getElementById('mxStage');
+  if(mBox) mBox.innerHTML = '';
+  if(stBox) stBox.innerHTML = '';
+  if(sBox) sBox.innerHTML = '🔎 Searching MovieX providers for “' + esc(query) + '”…';
+  MXPROVIDERS.forEach(function(P){
+    mxCall(P.v, 'posts', 'getSearchPosts', {searchQuery: query, page: 1}, null, 45000).then(function(posts){
+      (posts || []).forEach(function(p){
+        var sc = titleScore(p.title, playState.title);
+        playState.matches.push({pv: P.v, pvName: P.name, post: p, score: sc});
+        if(sc === 3) playState.exact += 1;
+      });
+    }).catch(function(){}).then(function(){
+      playState.swept += 1;
+      paintMatches();
+      if(playState.swept === MXPROVIDERS.length){
+        if(sBox) sBox.innerHTML = playState.matches.length
+          ? '✅ Found ' + playState.matches.length + ' match' + (playState.matches.length > 1 ? 'es' : '') + ' across ' + MXPROVIDERS.length + ' providers. Tap the right one — it plays here with no ads.'
+          : '😔 No provider carries this title under that name. Try another name in the search below, or watch it in the app.';
+        if(playState.exact === 1){
+          var only = playState.matches.filter(function(m){ return m.score === 3; })[0];
+          if(only) selectMatch(only.pv, only.post.link);
+        }
+      }
+    });
+  });
+}
+function paintMatches(){
+  var box = document.getElementById('mxMatches');
+  if(!box || !playState) return;
+  var sorted = playState.matches.slice().sort(function(a, b){ return b.score - a.score; });
+  var shown = sorted.filter(function(m){ return m.score > 0; });
+  var rest = sorted.filter(function(m){ return m.score === 0; });
+  var list = shown.concat(rest).slice(0, 40);
+  if(!list.length){ box.innerHTML = ''; return; }
+  box.innerHTML = '<h2 class="sec">🎯 Pick your title</h2><div class="grid">' + list.map(function(m, i){
+    var p = m.post;
+    var img = p.image ? '<img loading="lazy" src="' + esc(p.image) + '" alt=""/>' : '<div class="noimg">' + esc(p.title) + '</div>';
+    return '<div class="card" data-match="' + i + '"><div class="pw">' + img + '<span class="badge">' + esc(m.pvName) + '</span></div>' +
+      '<div class="t">' + esc(p.title) + '</div><div class="y">' + esc(m.pvName) + (p.tag ? ' · ' + esc(p.tag) : '') + '</div></div>';
+  }).join('') + '</div>';
+  box.querySelectorAll('[data-match]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var m = list[Number(el.getAttribute('data-match'))];
+      selectMatch(m.pv, m.post.link);
+    });
+  });
+}
+function selectMatch(pv, link){
+  var stage = document.getElementById('mxStage');
+  if(!stage || !playState) return;
+  playState.pv = pv;
+  stage.innerHTML = '<div class="center"><div class="spin"></div>Loading from ' + esc(pv) + '…</div>';
+  stage.scrollIntoView({behavior: 'smooth', block: 'start'});
+  mxCall(pv, 'meta', 'getMeta', {link: link}).then(function(meta){
+    playState.meta = meta;
+    if(playState.kind === 'movie') return paintMovieUnits(meta);
+    return paintSeriesUnits(meta);
+  }).catch(function(){
+    stage.innerHTML = '<div class="note">⚠️ That source could not load its details. Pick another match above, or try the app.</div>';
+  });
+}
+function unitButtons(units, cb){
+  var stage = document.getElementById('mxStage');
+  stage.innerHTML = '<h2 class="sec">📺 ' + (playState.kind === 'tv' ? 'Episodes' : 'Watch options') + '</h2>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:8px">' + units.map(function(u, i){
+      return '<button class="pill" data-unit="' + i + '">' + esc(u.label) + '</button>';
+    }).join('') + '</div><div id="mxUnitStage"></div>';
+  stage.querySelectorAll('[data-unit]').forEach(function(b){
+    b.addEventListener('click', function(){
+      stage.querySelectorAll('[data-unit]').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      cb(units[Number(b.getAttribute('data-unit'))]);
+    });
+  });
+}
+function paintMovieUnits(meta){
+  var stage = document.getElementById('mxStage');
+  var units = [];
+  (meta.linkList || []).forEach(function(entry){
+    (entry.directLinks || []).forEach(function(dl){
+      units.push({label: ((entry.title || '') + ' ' + (dl.title || '')).trim() || 'Watch', link: dl.link});
+    });
+    if(entry.episodesLink) units.push({label: entry.title || 'Watch', link: null, episodesLink: entry.episodesLink});
+  });
+  if(!units.length){ stage.innerHTML = '<div class="note">😔 This match has no playable links. Pick another match above.</div>'; return; }
+  if(units.length === 1){ openUnit(units[0]); return; }
+  unitButtons(units, openUnit);
+}
+function paintSeriesUnits(meta){
+  var stage = document.getElementById('mxStage');
+  stage.innerHTML = '<div class="center"><div class="spin"></div>Loading episodes…</div>';
+  var groups = [];
+  var jobs = (meta.linkList || []).map(function(entry){
+    if(entry.episodesLink){
+      return mxCall(playState.pv, 'episodes', 'getEpisodes', {url: entry.episodesLink}).then(function(eps){
+        groups.push({title: entry.title || 'Episodes', eps: eps || []});
+      }).catch(function(){});
+    }
+    if(entry.directLinks && entry.directLinks.length){
+      groups.push({title: entry.title || 'Episodes', eps: entry.directLinks.map(function(dl){ return {title: dl.title, link: dl.link}; })});
+      return Promise.resolve();
+    }
+    return Promise.resolve();
+  });
+  Promise.all(jobs).then(function(){
+    var total = groups.reduce(function(n, g){ return n + g.eps.length; }, 0);
+    if(!total){ stage.innerHTML = '<div class="note">😔 No episodes were found for this match. Pick another match above.</div>'; return; }
+    if(playState.s && playState.e){
+      var hit = null;
+      groups.forEach(function(g){ g.eps.forEach(function(ep){ if(!hit && epMatches(ep.title, playState.s, playState.e)) hit = ep; }); });
+      if(hit){ openUnit({label: hit.title, link: hit.link}); return; }
+    }
+    var units = [];
+    groups.forEach(function(g){ g.eps.forEach(function(ep){ units.push({label: (groups.length > 1 ? g.title + ' · ' : '') + (ep.title || 'Episode'), link: ep.link}); }); });
+    if(units.length === 1){ openUnit(units[0]); return; }
+    unitButtons(units, openUnit);
+  });
+}
+function epMatches(title, s, e){
+  var t = String(title || '');
+  var m = t.match(/s(\d{1,2})[\s._-]*e(\d{1,3})/i);
+  if(m) return Number(m[1]) === s && Number(m[2]) === e;
+  var m2 = t.match(/episode\s*(\d{1,3})/i) || t.match(/^(\d{1,3})[\s._-]/);
+  return m2 ? Number(m2[1]) === e : false;
+}
+function openUnit(unit){
+  var host = document.getElementById('mxUnitStage') || document.getElementById('mxStage');
+  if(!host || !playState) return;
+  if(unit.episodesLink && !unit.link){
+    host.innerHTML = '<div class="center"><div class="spin"></div>Loading…</div>';
+    mxCall(playState.pv, 'episodes', 'getEpisodes', {url: unit.episodesLink}).then(function(eps){
+      if(eps && eps.length) openUnit({label: eps[0].title || unit.label, link: eps[0].link});
+      else host.innerHTML = '<div class="note">😔 No playable link came back.</div>';
+    }).catch(function(){ host.innerHTML = '<div class="note">⚠️ Could not load that option.</div>'; });
+    return;
+  }
+  host.innerHTML = '<div class="center"><div class="spin"></div>Resolving an ad-free stream…</div>';
+  mxCall(playState.pv, 'stream', 'getStream', {link: unit.link, type: playState.meta.type, isDownload: false}).then(function(streams){
+    streams = (streams || []).filter(function(x){ return x && x.link; });
+    if(!streams.length){ host.innerHTML = '<div class="note">😔 No stream came back for this one. Try another option or another match above.</div>'; return; }
+    playState.streams = streams;
+    host.innerHTML =
+      '<div class="playerwrap"><div class="ar"><video id="mxVideo" controls autoplay playsinline style="position:absolute;inset:0;width:100%;height:100%"></video></div></div>' +
+      '<div class="meta" style="margin-top:12px"><span>📡 ' + esc(unit.label || '') + '</span><span>via ' + esc(playState.pv) + '</span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px" id="mxSources">' + streams.map(function(st, i){
+        return '<button class="pill' + (i === 0 ? ' on' : '') + '" data-src="' + i + '">' + esc(st.server || ('Source ' + (i + 1))) + (st.quality ? ' · ' + esc(st.quality) : '') + '</button>';
+      }).join('') + '</div>' +
+      '<div class="note" id="mxPlayNote">If a source stalls or errors, tap another source above — a different server usually works. Some sources only play inside the app; the app has all 23 providers plus downloads.</div>';
+    host.querySelectorAll('[data-src]').forEach(function(b){
+      b.addEventListener('click', function(){
+        host.querySelectorAll('[data-src]').forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        playSource(streams[Number(b.getAttribute('data-src'))]);
+      });
+    });
+    playSource(streams[0]);
+  }).catch(function(){
+    host.innerHTML = '<div class="note">⚠️ The stream could not be resolved. Try another option or match.</div>';
+  });
+}
+function playSource(st){
+  var v = document.getElementById('mxVideo');
+  if(!v || !st) return;
+  mxStopPlayer();
+  v = document.getElementById('mxVideo');
+  var note = document.getElementById('mxPlayNote');
+  var link = st.link;
+  var isHls = st.type === 'm3u8' || /\.m3u8($|\?)/i.test(link);
+  v.onerror = function(){
+    if(note) note.innerHTML = '⚠️ This source would not play in the browser. Tap another source above — or watch it in the app, where every source works.';
+  };
+  if(isHls){
+    if(window.MXDeps && MXDeps.Hls && MXDeps.Hls.isSupported()){
+      var hls = new MXDeps.Hls({maxBufferLength: 60});
+      mxHls = hls;
+      hls.loadSource(link);
+      hls.attachMedia(v);
+      hls.on(MXDeps.Hls.Events.ERROR, function(_, data){
+        if(data && data.fatal && note) note.innerHTML = '⚠️ This stream was blocked for websites (its server only allows apps). Tap another source above — or watch it in the app.';
+      });
+    } else if(v.canPlayType('application/vnd.apple.mpegurl')){
+      v.src = link;
+    } else {
+      if(note) note.innerHTML = '⚠️ Your browser cannot play this stream type. Try the app.';
+      return;
+    }
+  } else {
+    v.src = link;
+  }
+  var pp = v.play();
+  if(pp && pp.catch) pp.catch(function(){});
 }
 
 function renderApp(){
@@ -347,13 +750,15 @@ function renderApp(){
 function route(){
   var h = location.hash || '#/';
   var parts = h.replace(/^#\//, '').split('/').filter(function(x){ return x !== ''; });
+  if(parts[0] !== 'play' && typeof mxStopPlayer === 'function') mxStopPlayer();
   if(parts.length === 0) return renderHome();
   if(parts[0] === 'movies' && parts.length === 1) return renderGrid('movie');
   if(parts[0] === 'tv' && parts.length === 1) return renderGrid('tv');
   if(parts[0] === 'search' && parts.length >= 2) return renderSearch(decodeURIComponent(parts.slice(1).join('/')));
   if(parts[0] === 'title' && parts.length === 3) return renderTitle(parts[1], parts[2]);
-  if(parts[0] === 'watch' && parts[1] === 'movie' && parts.length === 3) return renderWatch('movie', parts[2]);
-  if(parts[0] === 'watch' && parts[1] === 'tv' && parts.length === 5) return renderWatch('tv', parts[2], parts[3], parts[4]);
+  if(parts[0] === 'play' && parts[1] === 'movie' && parts.length === 3) return renderPlay('movie', parts[2]);
+  if(parts[0] === 'play' && parts[1] === 'tv' && parts.length === 3) return renderPlay('tv', parts[2]);
+  if(parts[0] === 'play' && parts[1] === 'tv' && parts.length === 5) return renderPlay('tv', parts[2], parts[3], parts[4]);
   if(parts[0] === 'app') return renderApp();
   return renderHome();
 }
